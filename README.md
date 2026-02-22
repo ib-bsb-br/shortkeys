@@ -51,7 +51,7 @@ src/
     └── url-matching.ts      # Glob/regex URL matching
 ```
 
-## Copilot
+## AGENTS.md
 
 # Shortkeys - Copilot Instructions
 

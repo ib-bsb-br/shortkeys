@@ -2,11 +2,6 @@
 
 Custom keyboard shortcuts for your browser
 
-[Chrome Webstore](https://chrome.google.com/webstore/detail/shortkeys-custom-keyboard/logpjaacgmcbpdkdchjiaagddngobkck) |
-[Firefox Add-on](https://addons.mozilla.org/firefox/addon/shortkeys/) |
-[Documentation](https://github.com/mikecrittenden/shortkeys/wiki/How-To-Use-Shortkeys) |
-[Support](https://github.com/mikecrittenden/shortkeys/issues)
-
 ## Install
 
     npm install

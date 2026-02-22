@@ -1,39 +1,51 @@
 name: CI Tests
-permissions:
-  contents: read
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  test-and-build:
+    name: Node ${{ matrix.node-version }}
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 20
+
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [20.x, 22.x]
+        node-version:
+          - '20.x'
+          - '22.x'
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
 
-    - name: Run tests
-      run: npm test
+      - name: Run tests
+        run: npm run test
 
-    - name: Build project
-      run: npm run build chrome
-      
-    - name: Build extension
-      run: npm run build
+      - name: Build extension (Chromium)
+        run: npm run build
+
+      - name: Build extension (Firefox)
+        run: npm run build:firefox

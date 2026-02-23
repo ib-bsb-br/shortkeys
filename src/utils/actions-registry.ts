@@ -1,3 +1,5 @@
+import { JS_SNIPPETS } from './js-snippets'
+
 export interface ActionDefinition {
   value: string
   label: string
@@ -34,9 +36,9 @@ export const ACTION_CATEGORIES: Record<string, ActionDefinition[]> = {
     { value: 'openclipboardurl', label: 'Open URL from clipboard', builtin: true },
     { value: 'openclipboardurlnewtab', label: 'Open URL from clipboard in new tab', builtin: true },
     { value: 'openurl', label: 'Navigate to a specific URL' },
-    { value: 'opensettings', label: 'Open Settings Page', builtin: true },
-    { value: 'openextensions', label: 'Open Extensions Page', builtin: true },
-    { value: 'openshortcuts', label: 'Open Keyboard Shortcuts Page', builtin: true },
+    { value: 'opensettings', label: 'Open settings page', builtin: true },
+    { value: 'openextensions', label: 'Open extensions page', builtin: true },
+    { value: 'openshortcuts', label: 'Open keyboard shortcuts page', builtin: true },
   ],
   Bookmarks: [
     { value: 'openbookmark', label: 'Open bookmark/bookmarklet in current tab' },
@@ -82,9 +84,9 @@ export const ACTION_CATEGORIES: Record<string, ActionDefinition[]> = {
     { value: 'fullscreen', label: 'Toggle fullscreen', builtin: true },
   ],
   Zooming: [
-    { value: 'zoomin', label: 'Zoom In', builtin: true },
-    { value: 'zoomout', label: 'Zoom Out', builtin: true },
-    { value: 'zoomreset', label: 'Reset Zoom', builtin: true },
+    { value: 'zoomin', label: 'Zoom in', builtin: true },
+    { value: 'zoomout', label: 'Zoom out', builtin: true },
+    { value: 'zoomreset', label: 'Reset zoom', builtin: true },
   ],
   Miscellaneous: [
     { value: 'javascript', label: 'Run JavaScript' },
@@ -96,7 +98,7 @@ export const ACTION_CATEGORIES: Record<string, ActionDefinition[]> = {
     { value: 'inserttext', label: 'Insert/type text into focused field' },
     { value: 'print', label: 'Print page', builtin: true },
     { value: 'buttonnexttab', label: 'Click button and switch to next tab' },
-    { value: 'openapp', label: 'Open App' },
+    { value: 'openapp', label: 'Open app' },
     { value: 'togglebookmark', label: 'Bookmark/unbookmark current page', builtin: true },
     { value: 'openincognito', label: 'Open current page in incognito window', builtin: true },
     { value: 'capturescreenshot', label: 'Capture current viewport screenshot' },
@@ -123,6 +125,7 @@ export const ACTION_CATEGORIES: Record<string, ActionDefinition[]> = {
     { value: 'showcheatsheet', label: 'Show shortcut cheat sheet overlay' },
     { value: 'toggledarkmode', label: 'Toggle dark mode on current page' },
   ],
+  'Page Scripts': JS_SNIPPETS.map((s) => ({ value: 'script-' + s.id, label: s.name })),
 }
 
 /** Get a flat list of all valid action values. */

@@ -114,6 +114,14 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener((request: any, _sender, sendResponse) => {
     const action = request.action
 
+    if (action === 'fetchUrl') {
+      fetch(request.url)
+        .then(r => r.text())
+        .then(text => sendResponse({ text }))
+        .catch(e => sendResponse({ error: e.message }))
+      return true
+    }
+
     if (action === 'getKeys') {
       ;(async () => {
         const currentUrl = request.url
@@ -171,6 +179,21 @@ export default defineBackground(() => {
   chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
     if (notificationId === 'settingsNotification' && buttonIndex === 0) {
       chrome.runtime.openOptionsPage()
+    }
+  })
+
+  // Handle imports from shortkeys.app share links
+  chrome.runtime.onMessageExternal.addListener((message, _sender, sendResponse) => {
+    if (message.action === 'importShortcuts' && Array.isArray(message.shortcuts)) {
+      ;(async () => {
+        const raw = await loadKeys()
+        const existing = JSON.parse(raw || '[]')
+        const newShortcuts = message.shortcuts.map((s: any) => ({ ...s, id: s.id || uuid() }))
+        const merged = existing.concat(newShortcuts)
+        await saveKeys(merged)
+        sendResponse({ success: true, count: newShortcuts.length })
+      })()
+      return true
     }
   })
 })

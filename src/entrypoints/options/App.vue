@@ -16,6 +16,7 @@ import SearchSelect from '@/components/SearchSelect.vue'
 import CodeEditor from '@/components/CodeEditor.vue'
 import ShortcutRecorder from '@/components/ShortcutRecorder.vue'
 import { ALL_PACKS, type ShortcutPack } from '@/packs'
+import { resolveUserscriptUrl, parseUserscript } from '@/utils/fetch-userscript'
 
 const activeTab = ref(0)
 const keys = ref<KeySetting[]>([])
@@ -28,6 +29,9 @@ const snackType = ref<'success' | 'danger'>('success')
 const searchQuery = ref('')
 const dragIndex = ref<number | null>(null)
 const darkMode = ref(false)
+const userscriptUrl = ref('')
+const userscriptLoading = ref(false)
+const userscriptMessage = ref('')
 
 function initTheme() {
   const saved = localStorage.getItem('shortkeys-theme')
@@ -396,6 +400,29 @@ async function testJavascript(row: KeySetting) {
   }
 }
 
+async function importUserscript(index: number) {
+  const url = userscriptUrl.value.trim()
+  if (!url) return
+  userscriptLoading.value = true
+  userscriptMessage.value = ''
+  try {
+    const codeUrl = resolveUserscriptUrl(url)
+    const resp: any = await browser.runtime.sendMessage({ action: 'fetchUrl', url: codeUrl })
+    if (resp?.error) {
+      userscriptMessage.value = '❌ ' + resp.error
+      return
+    }
+    const { code, name } = parseUserscript(resp.text)
+    keys.value[index].code = code
+    userscriptMessage.value = '✓ Imported: ' + name
+    userscriptUrl.value = ''
+  } catch (e: any) {
+    userscriptMessage.value = '❌ ' + (e.message || 'Failed to fetch')
+  } finally {
+    userscriptLoading.value = false
+  }
+}
+
 onMounted(async () => {
   const saved = await loadKeys()
   if (saved) {
@@ -641,6 +668,21 @@ onMounted(async () => {
                     </div>
                   </div>
                   <CodeEditor :modelValue="keys[index].code || ''" @update:modelValue="keys[index].code = $event" />
+                </div>
+                <div v-if="keys[index].action === 'javascript'" class="import-userscript">
+                  <div class="import-userscript-row">
+                    <i class="mdi mdi-link-variant import-icon"></i>
+                    <input
+                      v-model="userscriptUrl"
+                      class="import-userscript-input"
+                      placeholder="Paste a Greasyfork or userscript URL to import…"
+                      @keydown.enter="importUserscript(index)"
+                    />
+                    <button class="btn-fetch" @click="importUserscript(index)" type="button" :disabled="userscriptLoading">
+                      <i :class="['mdi', userscriptLoading ? 'mdi-loading mdi-spin' : 'mdi-download']"></i> Fetch
+                    </button>
+                  </div>
+                  <span v-if="userscriptMessage" class="import-userscript-msg">{{ userscriptMessage }}</span>
                 </div>
 
                 <!-- Action-specific settings -->
@@ -889,6 +931,7 @@ onMounted(async () => {
         <pre class="export-pre">{{ JSON.stringify(keys, null, 2) }}</pre>
       </div>
     </main>
+
   </div>
 </template>
 
@@ -1146,6 +1189,11 @@ a:hover { text-decoration: underline; }
   display: flex;
   flex-direction: column;
   gap: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px var(--shadow);
 }
 
 .group-header {
@@ -1154,19 +1202,13 @@ a:hover { text-decoration: underline; }
   gap: 8px;
   padding: 10px 12px;
   background: var(--bg-card);
-  border-radius: 10px 10px 0 0;
-  border: 1px solid var(--border);
-  border-bottom: none;
+  border-bottom: 1px solid var(--border-light);
   position: sticky;
   top: 56px;
   z-index: 5;
 }
 
-.shortcut-group:first-child .group-header,
-.shortcut-group .group-header { border-radius: 10px; }
-.shortcut-group .shortcut-list:not([style*="none"]) ~ .btn-add-to-group,
-.shortcut-group .shortcut-list { border-top: 1px solid var(--border-light); }
-.shortcut-group:has(.shortcut-list:not([style*="display: none"])) .group-header { border-radius: 10px 10px 0 0; }
+.shortcut-group .shortcut-list { border-top: none; }
 
 .group-collapse {
   background: none;
@@ -1265,10 +1307,10 @@ a:hover { text-decoration: underline; }
   justify-content: center;
   gap: 4px;
   padding: 8px;
-  background: var(--bg-elevated);
-  border: 1px dashed var(--border);
-  border-top: none;
-  border-radius: 0 0 10px 10px;
+  background: transparent;
+  border: none;
+  border-top: 1px dashed var(--border-light);
+  border-radius: 0;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
@@ -1276,7 +1318,7 @@ a:hover { text-decoration: underline; }
   transition: all 0.15s;
 }
 
-.btn-add-to-group:hover { background: var(--bg-hover); color: var(--text-secondary); border-color: var(--text-placeholder); }
+.btn-add-to-group:hover { background: var(--bg-hover); color: var(--text-secondary); }
 .btn-add-to-group .mdi { font-size: 14px; }
 .shortcut-list {
   display: flex;
@@ -1286,12 +1328,13 @@ a:hover { text-decoration: underline; }
 
 .shortcut-card {
   background: var(--bg-card);
-  border-radius: 10px;
-  box-shadow: 0 1px 3px var(--shadow);
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid var(--border-light);
   transition: box-shadow 0.15s;
 }
 
-.shortcut-card:hover { box-shadow: 0 2px 8px var(--shadow-hover); }
+.shortcut-card:hover { background: var(--bg-elevated); }
 .shortcut-card.disabled { opacity: 0.5; }
 .shortcut-card.dragging { opacity: 0.4; box-shadow: 0 4px 16px rgba(67,97,238,0.2); }
 
@@ -1299,7 +1342,7 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 12px 0 8px;
+  padding: 10px 16px 0 8px;
 }
 
 .drag-handle {
@@ -1650,6 +1693,63 @@ a:hover { text-decoration: underline; }
 
 .btn-run:hover { background: #047857; }
 .btn-run .mdi { font-size: 14px; }
+
+/* ── Import userscript ── */
+.import-userscript {
+  padding: 10px 0 0;
+}
+
+.import-userscript-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.import-icon {
+  color: var(--text-muted);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.import-userscript-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+}
+
+.import-userscript-input:focus { border-color: var(--blue); }
+.import-userscript-input::placeholder { color: var(--text-placeholder); }
+
+.btn-fetch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-fetch:hover { background: #475569; }
+.btn-fetch:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-fetch .mdi { font-size: 14px; }
+
+.import-userscript-msg {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+
 
 /* ── Alerts ── */
 .alert {
